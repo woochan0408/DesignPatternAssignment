@@ -159,17 +159,26 @@ public class EntityCounterPanel extends JPanel implements MapObserver {
         // PacGum 자동 채우기
         manager.fillEmptySpacesWithPacGum();
 
-        // CSV 파일로 저장
+        // CSV 파일과 배경 이미지로 저장
         try {
-            EntityType[][] mapData = manager.getMapDataCopy();
-            String filePath = mapeditor.utils.CsvMapWriter.saveMap(mapData, null);
+            EntityType[][] mapData = manager.getMapDataCopy(); // 논리적 28×31 그리드
+            String csvPath = mapeditor.utils.CsvMapWriter.saveMap(mapData, null);
+
+            // 이미지 경로 계산
+            String fileName = new java.io.File(csvPath).getName();
+            String nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
+            String imgPath = "src/resources/img/" + nameWithoutExt + "_bg.png";
 
             JOptionPane.showMessageDialog(this,
-                "맵이 성공적으로 저장되었습니다!\n경로: " + filePath,
+                "맵이 성공적으로 저장되었습니다!\n\n" +
+                "CSV 파일: " + csvPath + "\n" +
+                "배경 이미지: " + imgPath + "\n\n" +
+                "게임에서 이 맵을 사용하려면 Game.java에서\n" +
+                "\"level/" + fileName + "\"로 변경하세요.",
                 "저장 완료",
                 JOptionPane.INFORMATION_MESSAGE);
 
-            manager.setLastSavedFilePath(filePath);
+            manager.setLastSavedFilePath(csvPath);
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,

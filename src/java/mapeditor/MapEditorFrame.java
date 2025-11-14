@@ -39,7 +39,7 @@ public class MapEditorFrame extends JFrame {
      * 프레임 초기화
      */
     private void initializeFrame() {
-        setTitle("Pacman Map Editor - 디자인 패턴 적용");
+        setTitle("Pacman Map Editor - 28×31 Grid (CSV: 56×62)");
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setResizable(false);
 
@@ -60,7 +60,8 @@ public class MapEditorFrame extends JFrame {
         palettePanel = new EntityPalettePanel();
 
         // 중앙 그리드 패널
-        JScrollPane gridScrollPane = new JScrollPane(gridPanel = new MapGridPanel());
+        gridPanel = new MapGridPanel();
+        JScrollPane gridScrollPane = new JScrollPane(gridPanel);
         gridScrollPane.setPreferredSize(new Dimension(
             MapGridPanel.CELL_SIZE * mapeditor.model.MapData.WIDTH + 20,
             MapGridPanel.CELL_SIZE * mapeditor.model.MapData.HEIGHT + 20
@@ -255,17 +256,26 @@ public class MapEditorFrame extends JFrame {
         // PacGum 자동 채우기
         manager.fillEmptySpacesWithPacGum();
 
-        // CSV 파일로 저장
+        // CSV 파일과 배경 이미지로 저장
         try {
             mapeditor.model.EntityType[][] mapData = manager.getMapDataCopy();
-            String filePath = mapeditor.utils.CsvMapWriter.saveMap(mapData, null);
+            String csvPath = mapeditor.utils.CsvMapWriter.saveMap(mapData, null);
+
+            // 이미지 경로 계산
+            String fileName = new java.io.File(csvPath).getName();
+            String nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
+            String imgPath = "src/resources/img/" + nameWithoutExt + "_bg.png";
 
             JOptionPane.showMessageDialog(this,
-                "맵이 성공적으로 저장되었습니다!\n경로: " + filePath,
+                "맵이 성공적으로 저장되었습니다!\n\n" +
+                "CSV 파일: " + csvPath + "\n" +
+                "배경 이미지: " + imgPath + "\n\n" +
+                "게임에서 이 맵을 사용하려면 Game.java에서\n" +
+                "\"level/" + fileName + "\"로 변경하세요.",
                 "저장 완료",
                 JOptionPane.INFORMATION_MESSAGE);
 
-            manager.setLastSavedFilePath(filePath);
+            manager.setLastSavedFilePath(csvPath);
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,

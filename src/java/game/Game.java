@@ -33,7 +33,7 @@ public class Game implements Observer {
         //Chargement du fichier csv du niveau
         List<List<String>> data = null;
         try {
-            data = new CsvReader().parseCsv(getClass().getClassLoader().getResource("level/level.csv").toURI());
+            data = new CsvReader().parseCsv(getClass().getClassLoader().getResource("level/custom_map_001.csv").toURI());
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }

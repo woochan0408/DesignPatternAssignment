@@ -13,8 +13,13 @@ import java.util.*;
  * - Single Responsibility: 맵 데이터 관리만 담당
  */
 public class MapData {
-    public static final int WIDTH = 56;
-    public static final int HEIGHT = 63;
+    // 논리적 그리드 크기 (맵 에디터에서 사용)
+    public static final int WIDTH = 28;
+    public static final int HEIGHT = 31;
+
+    // 실제 CSV 크기 (4x4 확장)
+    public static final int CSV_WIDTH = 56;  // WIDTH * 2
+    public static final int CSV_HEIGHT = 62; // HEIGHT * 2 (원래 게임은 62줄)
 
     private EntityType[][] grid;
     private Map<EntityType, Integer> entityCounts;
@@ -186,6 +191,52 @@ public class MapData {
             System.arraycopy(grid[y], 0, copy[y], 0, WIDTH);
         }
         return copy;
+    }
+
+    /**
+     * 논리적 그리드를 실제 CSV 크기로 확장 (4x4 확장)
+     * 28×31 → 56×62
+     * 각 논리적 칸을 2×2로 확장하고, 좌측 상단에만 엔티티 표기
+     */
+    public EntityType[][] getExpandedGridForCSV() {
+        EntityType[][] expanded = new EntityType[CSV_HEIGHT][CSV_WIDTH];
+
+        // 먼저 전체를 EMPTY로 초기화
+        for (int y = 0; y < CSV_HEIGHT; y++) {
+            for (int x = 0; x < CSV_WIDTH; x++) {
+                expanded[y][x] = EntityType.EMPTY;
+            }
+        }
+
+        // 논리적 그리드의 각 칸을 2×2로 확장
+        // 엔티티는 좌측 상단(0,0)에만 배치
+        for (int logicalY = 0; logicalY < HEIGHT; logicalY++) {
+            for (int logicalX = 0; logicalX < WIDTH; logicalX++) {
+                EntityType entity = grid[logicalY][logicalX];
+
+                // CSV 좌표 계산 (2배 확장)
+                int csvX = logicalX * 2;
+                int csvY = logicalY * 2;
+
+                // 범위 체크
+                if (csvY < CSV_HEIGHT && csvX < CSV_WIDTH) {
+                    // 벽의 경우 2×2 전체를 채움
+                    if (entity == EntityType.WALL || entity == EntityType.GHOST_HOUSE_WALL) {
+                        for (int dy = 0; dy < 2 && csvY + dy < CSV_HEIGHT; dy++) {
+                            for (int dx = 0; dx < 2 && csvX + dx < CSV_WIDTH; dx++) {
+                                expanded[csvY + dy][csvX + dx] = entity;
+                            }
+                        }
+                    }
+                    // 다른 엔티티는 좌측 상단에만 배치
+                    else if (entity != EntityType.EMPTY) {
+                        expanded[csvY][csvX] = entity;
+                    }
+                }
+            }
+        }
+
+        return expanded;
     }
 
     /**
