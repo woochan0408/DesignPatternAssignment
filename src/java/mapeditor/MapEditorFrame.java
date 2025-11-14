@@ -24,7 +24,6 @@ public class MapEditorFrame extends JFrame {
     private EntityPalettePanel palettePanel;
     private MapGridPanel gridPanel;
     private EntityCounterPanel counterPanel;
-    private JLabel statusBar;
 
     public MapEditorFrame() {
         this.manager = MapEditorManager.getInstance();
@@ -69,16 +68,6 @@ public class MapEditorFrame extends JFrame {
 
         // 오른쪽 카운터 패널
         counterPanel = new EntityCounterPanel();
-
-        // 상태 바
-        statusBar = new JLabel(" 준비됨");
-        statusBar.setBorder(BorderFactory.createEtchedBorder());
-        statusBar.setPreferredSize(new Dimension(0, 25));
-        statusBar.setFont(new Font("Arial", Font.PLAIN, 12));
-
-        // 타이머로 상태 업데이트
-        Timer statusTimer = new Timer(100, e -> updateStatusBar());
-        statusTimer.start();
     }
 
     /**
@@ -95,9 +84,6 @@ public class MapEditorFrame extends JFrame {
         centerPanel.add(new JScrollPane(gridPanel), BorderLayout.CENTER);
         centerPanel.add(counterPanel, BorderLayout.EAST);
         add(centerPanel, BorderLayout.CENTER);
-
-        // 하단 상태 바
-        add(statusBar, BorderLayout.SOUTH);
 
         pack();
         setLocationRelativeTo(null); // 화면 중앙에 배치
@@ -192,37 +178,6 @@ public class MapEditorFrame extends JFrame {
                 handleExit();
             }
         });
-    }
-
-    /**
-     * 상태 바 업데이트
-     */
-    private void updateStatusBar() {
-        StringBuilder status = new StringBuilder();
-        status.append(" 상태: ").append(manager.getCurrentStateName());
-        status.append(" | ");
-
-        if (manager.canUndo()) {
-            status.append("Undo 가능");
-        } else {
-            status.append("Undo 불가");
-        }
-        status.append(" | ");
-
-        if (manager.canRedo()) {
-            status.append("Redo 가능");
-        } else {
-            status.append("Redo 불가");
-        }
-        status.append(" | ");
-
-        if (manager.validateMap()) {
-            status.append("저장 가능");
-        } else {
-            status.append("필수 엔티티 부족");
-        }
-
-        statusBar.setText(status.toString());
     }
 
     /**

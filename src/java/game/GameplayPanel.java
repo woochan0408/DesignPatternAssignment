@@ -29,7 +29,8 @@ public class GameplayPanel extends JPanel implements Runnable {
         setPreferredSize(new Dimension(width, height));
         setFocusable(true);
         requestFocus();
-        backgroundImage = ImageIO.read(getClass().getClassLoader().getResource("img/custom_map_001_bg.png"));
+        //"img/custom_map_001_bg.png"
+        backgroundImage = ImageIO.read(getClass().getClassLoader().getResource("img/background.png"));
     }
 
     @Override

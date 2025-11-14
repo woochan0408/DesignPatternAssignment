@@ -46,6 +46,12 @@ public class EraseState implements EditorState {
     public void handleMouseMove(int gridX, int gridY) {
         currentGridPosition = new Point(gridX, gridY);
 
+        // 편집 불가능한 영역 체크 (고스트 집)
+        if (!mapData.isEditable(gridX, gridY)) {
+            canEraseAtCurrentPosition = false;
+            return;
+        }
+
         // 현재 위치에 삭제할 엔티티가 있는지 확인
         EntityType currentEntity = mapData.getEntityAt(gridX, gridY);
         canEraseAtCurrentPosition = (currentEntity != null && currentEntity != EntityType.EMPTY);

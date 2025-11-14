@@ -21,38 +21,115 @@ public class MapData {
     public static final int CSV_WIDTH = 56;  // WIDTH * 2
     public static final int CSV_HEIGHT = 62; // HEIGHT * 2 (원래 게임은 62줄)
 
+    // 고스트 집 위치와 크기 (중앙에 배치)
+    private static final int GHOST_HOUSE_X = 11;  // 중앙 X 좌표
+    private static final int GHOST_HOUSE_Y = 14;  // 중앙 Y 좌표
+    private static final int GHOST_HOUSE_WIDTH = 5;
+    private static final int GHOST_HOUSE_HEIGHT = 3;
+
     private EntityType[][] grid;
     private Map<EntityType, Integer> entityCounts;
     private List<MapObserver> observers;
+    private boolean[][] editableGrid;  // 편집 가능 영역 표시
 
     public MapData() {
         this.grid = new EntityType[HEIGHT][WIDTH];
         this.entityCounts = new HashMap<>();
         this.observers = new ArrayList<>();
+        this.editableGrid = new boolean[HEIGHT][WIDTH];
 
-        // 그리드를 빈 공간으로 초기화
+        // 그리드를 초기화 (테두리 벽과 고스트 집 포함)
         resetGrid();
     }
 
     /**
-     * 그리드를 빈 공간으로 초기화
+     * 그리드를 초기화 (테두리 벽과 고스트 집 포함)
      */
     public void resetGrid() {
+        // 1. 전체를 빈 공간으로 초기화
         for (int y = 0; y < HEIGHT; y++) {
             for (int x = 0; x < WIDTH; x++) {
                 grid[y][x] = EntityType.EMPTY;
+                editableGrid[y][x] = true;  // 기본적으로 편집 가능
             }
         }
 
-        // 엔티티 개수 초기화
+        // 2. 테두리 벽 추가 (편집 가능)
+        for (int x = 0; x < WIDTH; x++) {
+            grid[0][x] = EntityType.WALL;  // 상단
+            grid[HEIGHT - 1][x] = EntityType.WALL;  // 하단
+        }
+        for (int y = 0; y < HEIGHT; y++) {
+            grid[y][0] = EntityType.WALL;  // 좌측
+            grid[y][WIDTH - 1] = EntityType.WALL;  // 우측
+        }
+
+        // 3. 고스트 집 구조 추가 (편집 불가능)
+        createGhostHouse();
+
+        // 4. 엔티티 개수 재계산
+        recountEntities();
+
+        // 모든 옵저버에게 리셋 통지
+        notifyMapReset();
+    }
+
+    /**
+     * 고스트 집 구조 생성
+     */
+    private void createGhostHouse() {
+        int startX = GHOST_HOUSE_X;
+        int startY = GHOST_HOUSE_Y;
+
+        // 고스트 집 구조:
+        // x x - x x
+        // x . . . x
+        // x x x x x
+
+        // 첫 번째 줄: 벽 벽 GhostHouse벽 벽 벽
+        grid[startY][startX] = EntityType.WALL;
+        grid[startY][startX + 1] = EntityType.WALL;
+        grid[startY][startX + 2] = EntityType.GHOST_HOUSE_WALL;  // 유령 전용 입구
+        grid[startY][startX + 3] = EntityType.WALL;
+        grid[startY][startX + 4] = EntityType.WALL;
+
+        // 두 번째 줄: 벽 빈공간 빈공간 빈공간 벽
+        grid[startY + 1][startX] = EntityType.WALL;
+        grid[startY + 1][startX + 1] = EntityType.EMPTY;
+        grid[startY + 1][startX + 2] = EntityType.EMPTY;
+        grid[startY + 1][startX + 3] = EntityType.EMPTY;
+        grid[startY + 1][startX + 4] = EntityType.WALL;
+
+        // 세 번째 줄: 벽 벽 벽 벽 벽
+        grid[startY + 2][startX] = EntityType.WALL;
+        grid[startY + 2][startX + 1] = EntityType.WALL;
+        grid[startY + 2][startX + 2] = EntityType.WALL;
+        grid[startY + 2][startX + 3] = EntityType.WALL;
+        grid[startY + 2][startX + 4] = EntityType.WALL;
+
+        // 고스트 집 영역을 편집 불가능으로 설정
+        for (int y = 0; y < GHOST_HOUSE_HEIGHT; y++) {
+            for (int x = 0; x < GHOST_HOUSE_WIDTH; x++) {
+                editableGrid[startY + y][startX + x] = false;
+            }
+        }
+    }
+
+    /**
+     * 엔티티 개수 재계산
+     */
+    private void recountEntities() {
         entityCounts.clear();
         for (EntityType type : EntityType.values()) {
             entityCounts.put(type, 0);
         }
-        entityCounts.put(EntityType.EMPTY, WIDTH * HEIGHT);
 
-        // 모든 옵저버에게 리셋 통지
-        notifyMapReset();
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int x = 0; x < WIDTH; x++) {
+                EntityType type = grid[y][x];
+                incrementEntityCount(type);
+            }
+        }
     }
 
     /**
@@ -65,6 +142,11 @@ public class MapData {
     public boolean placeEntity(int x, int y, EntityType entityType) {
         if (!isValidPosition(x, y)) {
             return false;
+        }
+
+        // 편집 불가능한 영역 체크 (고스트 집)
+        if (!editableGrid[y][x]) {
+            return false;  // 고스트 집 영역은 수정 불가
         }
 
         // 필수 엔티티의 개수 제한 확인
@@ -109,6 +191,11 @@ public class MapData {
             return false;
         }
 
+        // 편집 불가능한 영역 체크 (고스트 집)
+        if (!editableGrid[y][x]) {
+            return false;  // 고스트 집 영역은 수정 불가
+        }
+
         EntityType previousType = grid[y][x];
         if (previousType == EntityType.EMPTY) {
             return false; // 이미 빈 공간
@@ -137,6 +224,24 @@ public class MapData {
             return null;
         }
         return grid[y][x];
+    }
+
+    /**
+     * 특정 위치가 편집 가능한지 확인
+     */
+    public boolean isEditable(int x, int y) {
+        if (!isValidPosition(x, y)) {
+            return false;
+        }
+        return editableGrid[y][x];
+    }
+
+    /**
+     * 고스트 집 영역인지 확인
+     */
+    public boolean isGhostHouseArea(int x, int y) {
+        return x >= GHOST_HOUSE_X && x < GHOST_HOUSE_X + GHOST_HOUSE_WIDTH &&
+               y >= GHOST_HOUSE_Y && y < GHOST_HOUSE_Y + GHOST_HOUSE_HEIGHT;
     }
 
     /**

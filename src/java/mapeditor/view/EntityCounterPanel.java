@@ -45,9 +45,19 @@ public class EntityCounterPanel extends JPanel implements MapObserver {
      */
     private void initializePanel() {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setPreferredSize(new Dimension(200, 0));
-        setBorder(BorderFactory.createTitledBorder("필수 엔티티 현황"));
-        setBackground(new Color(245, 245, 245));
+        setPreferredSize(new Dimension(250, 0));
+        setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createEmptyBorder(5, 5, 5, 5),
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(100, 100, 100), 2),
+                "▣ 필수 엔티티 현황",
+                javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION,
+                javax.swing.border.TitledBorder.DEFAULT_POSITION,
+                new Font("Arial", Font.BOLD, 14),
+                Color.WHITE
+            )
+        ));
+        setBackground(new Color(45, 45, 45));
     }
 
     /**
@@ -57,7 +67,8 @@ public class EntityCounterPanel extends JPanel implements MapObserver {
         // 필수 엔티티 카운터
         JPanel countersPanel = new JPanel();
         countersPanel.setLayout(new GridLayout(0, 1, 5, 5));
-        countersPanel.setBackground(new Color(245, 245, 245));
+        countersPanel.setBackground(new Color(55, 55, 55));
+        countersPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         for (EntityType type : EntityType.values()) {
             if (type.isRequired() && type.getMaxCount() > 0) {
@@ -90,23 +101,36 @@ public class EntityCounterPanel extends JPanel implements MapObserver {
 
         // 버튼 패널
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new GridLayout(2, 1, 5, 5));
-        buttonPanel.setBackground(new Color(245, 245, 245));
+        buttonPanel.setLayout(new GridLayout(2, 1, 8, 8));
+        buttonPanel.setBackground(new Color(55, 55, 55));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // 저장 버튼
-        saveButton = new JButton("💾 저장");
-        saveButton.setFont(new Font("Arial", Font.BOLD, 14));
-        saveButton.setBackground(new Color(100, 200, 100));
+        saveButton = new JButton("[SAVE] 저장");
+        saveButton.setFont(new Font("Arial", Font.BOLD, 16));
+        saveButton.setBackground(new Color(50, 150, 50));
         saveButton.setForeground(Color.WHITE);
+        saveButton.setPreferredSize(new Dimension(0, 50));
         saveButton.setEnabled(false);
+        saveButton.setFocusPainted(false);
+        saveButton.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(100, 200, 100), 2),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
         saveButton.addActionListener(e -> handleSave());
         buttonPanel.add(saveButton);
 
         // 초기화 버튼
-        resetButton = new JButton("🗑️ 초기화");
-        resetButton.setFont(new Font("Arial", Font.BOLD, 14));
-        resetButton.setBackground(new Color(200, 100, 100));
+        resetButton = new JButton("초기화");
+        resetButton.setFont(new Font("Arial", Font.BOLD, 16));
+        resetButton.setBackground(new Color(150, 50, 50));
         resetButton.setForeground(Color.WHITE);
+        resetButton.setPreferredSize(new Dimension(0, 50));
+        resetButton.setFocusPainted(false);
+        resetButton.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 100, 100), 2),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
         resetButton.addActionListener(e -> handleReset());
         buttonPanel.add(resetButton);
 
@@ -119,25 +143,31 @@ public class EntityCounterPanel extends JPanel implements MapObserver {
      */
     private JPanel createCounterRow(EntityType type) {
         JPanel row = new JPanel();
-        row.setLayout(new BorderLayout(5, 0));
-        row.setBackground(Color.WHITE);
-        row.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        row.setLayout(new BorderLayout(8, 0));
+        row.setBackground(new Color(65, 65, 65));
+        row.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(100, 100, 100), 1),
+            BorderFactory.createEmptyBorder(8, 10, 8, 10)
+        ));
 
         // 엔티티 이름
         JLabel nameLabel = new JLabel(type.getDisplayName() + ":");
-        nameLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        nameLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        nameLabel.setForeground(Color.WHITE);
         row.add(nameLabel, BorderLayout.WEST);
 
         // 카운트 레이블
         JLabel countLabel = new JLabel("0/" + type.getMaxCount());
-        countLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        countLabel.setFont(new Font("Monospaced", Font.BOLD, 13));
+        countLabel.setForeground(new Color(255, 200, 100));
+        countLabel.setHorizontalAlignment(SwingConstants.CENTER);
         countLabels.put(type, countLabel);
         row.add(countLabel, BorderLayout.CENTER);
 
         // 상태 아이콘
-        JLabel statusIcon = new JLabel("⚠️");
-        statusIcon.setFont(new Font("Arial", Font.PLAIN, 16));
-        statusIcon.setForeground(Color.RED);
+        JLabel statusIcon = new JLabel("⚠");
+        statusIcon.setFont(new Font("Arial", Font.PLAIN, 18));
+        statusIcon.setForeground(new Color(255, 100, 100));
         statusIcons.put(type, statusIcon);
         row.add(statusIcon, BorderLayout.EAST);
 
@@ -148,7 +178,9 @@ public class EntityCounterPanel extends JPanel implements MapObserver {
      * 저장 버튼 핸들러
      */
     private void handleSave() {
+        // 필수 엔티티 검증
         if (!manager.validateMap()) {
+            // 부족한 엔티티 정보를 팝업으로 표시
             JOptionPane.showMessageDialog(this,
                 manager.getValidationErrorMessage(),
                 "맵 저장 실패",
@@ -240,7 +272,7 @@ public class EntityCounterPanel extends JPanel implements MapObserver {
                 statusIcon.setText("✓");
                 statusIcon.setForeground(new Color(0, 150, 0));
             } else {
-                statusIcon.setText("⚠️");
+                statusIcon.setText("⚠");
                 statusIcon.setForeground(Color.RED);
             }
         }

@@ -74,6 +74,12 @@ public class PlacementState implements EditorState {
             return;
         }
 
+        // 편집 불가능한 영역 체크 (고스트 집)
+        if (!mapData.isEditable(gridX, gridY)) {
+            canPlaceAtCurrentPosition = false;
+            return;
+        }
+
         // 현재 위치에 배치 가능한지 확인
         EntityType currentEntity = mapData.getEntityAt(gridX, gridY);
         canPlaceAtCurrentPosition = (currentEntity == EntityType.EMPTY);
@@ -136,7 +142,23 @@ public class PlacementState implements EditorState {
         if (imageFile.exists()) {
             try {
                 BufferedImage image = ImageIO.read(imageFile);
-                g.drawImage(image, x, y, width, height, null);
+
+                // 스프라이트 시트인 경우 첫 번째 프레임만 추출
+                BufferedImage frameToUse;
+                if (type == EntityType.PACMAN && image.getWidth() == 512 && image.getHeight() == 32) {
+                    // Pacman 스프라이트 시트: 512x32에서 첫 32x32 추출
+                    frameToUse = image.getSubimage(0, 0, 32, 32);
+                } else if ((type == EntityType.BLINKY || type == EntityType.PINKY ||
+                           type == EntityType.INKY || type == EntityType.CLYDE) &&
+                          image.getWidth() == 256 && image.getHeight() == 32) {
+                    // Ghost 스프라이트 시트: 256x32에서 첫 32x32 추출
+                    frameToUse = image.getSubimage(0, 0, 32, 32);
+                } else {
+                    // 일반 이미지
+                    frameToUse = image;
+                }
+
+                g.drawImage(frameToUse, x, y, width, height, null);
             } catch (Exception e) {
                 // 이미지 로드 실패 시 심볼로 대체
                 drawEntitySymbol(g, type, x, y, width, height);

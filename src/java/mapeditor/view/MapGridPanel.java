@@ -24,8 +24,8 @@ import java.util.Map;
  * - State Pattern과 연동하여 마우스 이벤트 처리
  */
 public class MapGridPanel extends JPanel implements MapObserver {
-    public static final int CELL_SIZE = 16; // 8에서 16으로 증가 (더 보기 쉽게)
-    private static final Color GRID_COLOR = new Color(150, 150, 150);
+    public static final int CELL_SIZE = 24; // 더 큰 셀 크기로 시각성 향상
+    private static final Color GRID_COLOR = new Color(80, 80, 80, 150);  // 더 부드러운 그리드
     private static final Color BACKGROUND_COLOR = Color.BLACK;
 
     private MapEditorManager manager;
@@ -59,25 +59,49 @@ public class MapGridPanel extends JPanel implements MapObserver {
             MapData.HEIGHT * CELL_SIZE
         ));
         setBackground(BACKGROUND_COLOR);
-        setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
+        setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(100, 100, 255), 3),
+            BorderFactory.createLineBorder(new Color(50, 50, 50), 2)
+        ));
         setFocusable(true);
     }
 
     /**
-     * 엔티티 이미지 로드
+     * 엔티티 이미지 로드 (스프라이트 시트에서 첫 번째 프레임만 추출)
      */
     private void loadEntityImages() {
         String basePath = "src/resources/img/";
 
-        // 각 엔티티 타입별 이미지 로드 시도
-        loadImage(EntityType.PACMAN, basePath + "pacman.png");
-        loadImage(EntityType.BLINKY, basePath + "blinky.png");
-        loadImage(EntityType.PINKY, basePath + "pinky.png");
-        loadImage(EntityType.INKY, basePath + "inky.png");
-        loadImage(EntityType.CLYDE, basePath + "clyde.png");
+        // 팩맨: 512x32 스프라이트 시트에서 첫 32x32만 사용
+        loadSpriteImage(EntityType.PACMAN, basePath + "pacman.png", 32, 32, 512, 32);
+
+        // 유령들: 256x32 스프라이트 시트에서 첫 32x32만 사용
+        loadSpriteImage(EntityType.BLINKY, basePath + "blinky.png", 32, 32, 256, 32);
+        loadSpriteImage(EntityType.PINKY, basePath + "pinky.png", 32, 32, 256, 32);
+        loadSpriteImage(EntityType.INKY, basePath + "inky.png", 32, 32, 256, 32);
+        loadSpriteImage(EntityType.CLYDE, basePath + "clyde.png", 32, 32, 256, 32);
+
+        // 다른 이미지들은 그대로 로드
         loadImage(EntityType.WALL, basePath + "wall.png");
         loadImage(EntityType.SUPER_PAC_GUM, basePath + "superpacgum.png");
         loadImage(EntityType.PAC_GUM, basePath + "pacgum.png");
+    }
+
+    /**
+     * 스프라이트 시트에서 특정 프레임 추출
+     */
+    private void loadSpriteImage(EntityType type, String path, int frameWidth, int frameHeight, int sheetWidth, int sheetHeight) {
+        try {
+            File file = new File(path);
+            if (file.exists()) {
+                BufferedImage sheet = ImageIO.read(file);
+                // 첫 번째 프레임(맨 왼쪽) 추출
+                BufferedImage firstFrame = sheet.getSubimage(0, 0, frameWidth, frameHeight);
+                entityImages.put(type, firstFrame);
+            }
+        } catch (Exception e) {
+            System.err.println("스프라이트 이미지 로드 실패: " + path);
+        }
     }
 
     /**
@@ -231,6 +255,52 @@ public class MapGridPanel extends JPanel implements MapObserver {
             g.drawLine(0, y * CELL_SIZE,
                       MapData.WIDTH * CELL_SIZE, y * CELL_SIZE);
         }
+
+        // 고스트 집 영역 하이라이트 (편집 불가능 영역)
+        drawGhostHouseHighlight(g);
+    }
+
+    /**
+     * 고스트 집 영역 하이라이트
+     */
+    private void drawGhostHouseHighlight(Graphics2D g) {
+        // 편집 불가능한 영역을 약간 어둡게 표시
+        g.setColor(new Color(150, 50, 200, 25)); // 약간 보라색 투명 오버레이
+
+        for (int y = 0; y < MapData.HEIGHT; y++) {
+            for (int x = 0; x < MapData.WIDTH; x++) {
+                if (!manager.getMapData().isEditable(x, y)) {
+                    g.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                }
+            }
+        }
+
+        // 고스트 집 영역 테두리 강조
+        g.setStroke(new BasicStroke(2.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10.0f, new float[]{5.0f, 3.0f}, 0.0f));
+        g.setColor(new Color(200, 100, 255));
+
+        // 고스트 집 전체 영역 테두리 (하드코딩된 위치 사용)
+        int ghostHouseX = 11;
+        int ghostHouseY = 14;
+        int ghostHouseWidth = 5;
+        int ghostHouseHeight = 3;
+
+        g.drawRect(
+            ghostHouseX * CELL_SIZE + 2,
+            ghostHouseY * CELL_SIZE + 2,
+            ghostHouseWidth * CELL_SIZE - 4,
+            ghostHouseHeight * CELL_SIZE - 4
+        );
+
+        // "GHOST HOUSE" 텍스트
+        g.setFont(new Font("Arial", Font.BOLD, 10));
+        g.setColor(new Color(200, 100, 255, 200));
+        String text = "GHOST HOUSE";
+        FontMetrics fm = g.getFontMetrics();
+        int textWidth = fm.stringWidth(text);
+        int textX = ghostHouseX * CELL_SIZE + (ghostHouseWidth * CELL_SIZE - textWidth) / 2;
+        int textY = ghostHouseY * CELL_SIZE - 5;
+        g.drawString(text, textX, textY);
     }
 
     /**
